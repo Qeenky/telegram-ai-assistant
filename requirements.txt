@@ -2,3 +2,4 @@ aiogram
 pydantic
 python-dotenv
 pathlib
+openai
