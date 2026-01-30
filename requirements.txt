@@ -3,3 +3,5 @@ pydantic
 python-dotenv
 pathlib
 openai
+psycopg2
+sqlalchemy
