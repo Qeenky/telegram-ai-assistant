@@ -3,5 +3,6 @@ pydantic
 python-dotenv
 pathlib
 openai
+tiktoken
 psycopg2
 sqlalchemy

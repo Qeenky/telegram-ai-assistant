@@ -2,6 +2,7 @@ from openai import OpenAI
 from src.config import _Config
 from src.database.crud import get_db, DialogueCRUD
 from contextlib import contextmanager
+import tiktoken
 
 client = OpenAI(
     api_key=_Config.DEEPSEEK_API_KEY,
@@ -45,12 +46,23 @@ def standard_request(telegram_id: int, user_message: str):
 
         messages_for_api = []
 
-        # TODO: Реализовать ограничение по токенам, вместо сообщений
         if conversation_history:
+            try:
+                encoding = tiktoken.encoding_for_model("deepseek-chat")
+            except:
+                encoding = tiktoken.get_encoding("cl100k_base")
+
+            def count_tokens(text):
+                return len(encoding.encode(text))
+
+            max_dialog_tokens = 2048
+            current_tokens = 0
             recent_history = conversation_history[-19:]
-            for msg in recent_history:
-                if msg.get("content") and msg.get("role"):
-                    messages_for_api.append({
+            for msg in reversed(recent_history):
+                msg_tokens = count_tokens(msg['content']) + 5
+                if current_tokens + msg_tokens <= max_dialog_tokens:
+                    current_tokens += msg_tokens
+                    messages_for_api.insert(0, {
                         "role": msg["role"],
                         "content": msg["content"]
                     })
@@ -59,6 +71,9 @@ def standard_request(telegram_id: int, user_message: str):
                 "role": "user",
                 "content": user_message
             })
+        messages_for_api.insert(0, {"role": "system", "content": "Ты полезный ассистент. Отвечай кратко\
+и по делу. Если нужно дать развернутый ответ, старайся укладываться в 3000 символов. \
+Избегай чрезмерно длинных ответов."})
 
         print(f"Сообщения для API: {messages_for_api}")
 
@@ -70,7 +85,7 @@ def standard_request(telegram_id: int, user_message: str):
                 model="deepseek-chat",
                 messages=messages_for_api,
                 stream=False,
-                max_tokens=4096
+                max_tokens=2048
             )
 
             assistant_reply = response.choices[0].message.content
