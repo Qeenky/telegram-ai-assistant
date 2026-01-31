@@ -6,3 +6,4 @@ openai
 tiktoken
 psycopg2
 sqlalchemy
+alembic

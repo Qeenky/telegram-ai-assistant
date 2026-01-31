@@ -18,6 +18,8 @@ class User(Base):
     telegram_id = Column(BigInteger, nullable=False, unique=True)
     username = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=False), server_default=func.now())
+    daily_token_limit = Column(Integer, default=10000)
+    tokens_used_today = Column(Integer, default=0)
 
     # Связь с диалогом
     dialogue = relationship(
