@@ -1,7 +1,7 @@
 from aiogram.filters import Command
 from aiogram import types, Router
 from src.database.crud import get_db, get_or_create_user
-
+from src.database.crud import check_limit_tokens
 
 user_router = Router()
 
@@ -24,4 +24,9 @@ async def cmd_start(message: types.Message):
 # TODO: Обновлять содержание по мере создания функций
 @user_router.message(Command("help"))
 async def cmd_help(message: types.Message):
-    await message.answer("Помощь\n"+"="*30+"\n\n"+"Команды:")
+    await message.answer("Помощь\n"+"="*30+"\n\n"+"Команды:\n/limit - проверить лимит токенов.")
+
+@user_router.message(Command("limit"))
+async def cmd_limit(message: types.Message):
+    with get_db() as db:
+        await message.answer(check_limit_tokens(db, message.from_user.id))

@@ -76,6 +76,12 @@ def check_tokens_used(session: Session, telegram_id: int) -> bool:
     else:
         return False
 
+def check_limit_tokens(session: Session, telegram_id: int) -> str:
+    user = session.query(User).filter(User.telegram_id == telegram_id).first()
+    if not user:
+        logger.error(f"Пользователь {telegram_id} не найден")
+        return "Зарегестрируйтесь с помощью команды /start, или напишите в поддержку"
+    return f"{user.tokens_used_today} / {user.daily_token_limit} tokens."
 
 
 def get_user_by_id(session: Session, user_id: int) -> Optional[User]:
