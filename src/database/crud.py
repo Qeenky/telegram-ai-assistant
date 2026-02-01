@@ -34,7 +34,7 @@ def get_db() -> Session:
         db.close()
 
 # TODO: Удалить неиспользуемые функции
-def get_or_create_user(session: Session, telegram_id: int, username: Optional[str] = None) -> tuple[User, bool]:
+def get_or_create_user(session: Session, telegram_id: int, daily_token_limit: int, username: Optional[str] = None) -> tuple[User, bool]:
     """
     Получить пользователя или создать нового если не существует.
     Возвращает (user, created), где created = True если пользователь был создан, False если уже существовал
@@ -50,9 +50,32 @@ def get_or_create_user(session: Session, telegram_id: int, username: Optional[st
         return existing_user, False
     else:
         # Создаем нового пользователя
-        new_user = User(telegram_id=telegram_id, username=username)
+        new_user = User(telegram_id=telegram_id, username=username, daily_token_limit=daily_token_limit)
         session.add(new_user)
         return new_user, True
+
+
+
+def add_tokens_used(session: Session, telegram_id: int, tokens_used: int) -> bool:
+    user = session.query(User).filter(User.telegram_id == telegram_id).first()
+    if not user:
+        logger.error(f"Пользователь {telegram_id} не найден")
+        return False
+    user.tokens_used_today += tokens_used
+    session.commit()
+    return True
+
+def check_tokens_used(session: Session, telegram_id: int) -> bool:
+    user = session.query(User).filter(User.telegram_id == telegram_id).first()
+    if not user:
+        logger.error(f"Пользователь {telegram_id} не найден")
+        return False
+
+    if user.tokens_used_today < user.daily_token_limit:
+        return True
+    else:
+        return False
+
 
 
 def get_user_by_id(session: Session, user_id: int) -> Optional[User]:

@@ -11,7 +11,8 @@ async def cmd_start(message: types.Message):
         user, created = get_or_create_user(
             session=db,
             telegram_id=message.from_user.id,
-            username=message.from_user.username
+            username=message.from_user.username,
+            daily_token_limit=10000
         )
 
         if created:

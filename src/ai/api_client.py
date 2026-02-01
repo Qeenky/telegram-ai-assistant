@@ -1,6 +1,6 @@
 from openai import OpenAI
 from src.config import _Config
-from src.database.crud import get_db, DialogueCRUD
+from src.database.crud import get_db, DialogueCRUD, add_tokens_used, check_tokens_used
 from contextlib import contextmanager
 import tiktoken
 
@@ -25,6 +25,8 @@ def standard_request(telegram_id: int, user_message: str):
         Ответ ассистента
     """
     with get_db_session() as db:
+        if check_tokens_used(db, telegram_id) == False:
+            return "Достигнут лимит токенов."
         try:
             dialogue_user = DialogueCRUD.add_message(
                 session=db,
@@ -45,7 +47,7 @@ def standard_request(telegram_id: int, user_message: str):
         print(f"Полученная история: {conversation_history}")
 
         messages_for_api = []
-
+        total_tokens = 0
         if conversation_history:
             try:
                 encoding = tiktoken.encoding_for_model("deepseek-chat")
@@ -89,6 +91,8 @@ def standard_request(telegram_id: int, user_message: str):
             )
 
             assistant_reply = response.choices[0].message.content
+            total_tokens += current_tokens + count_tokens(assistant_reply)
+            add_tokens_used(session=db, telegram_id=telegram_id, tokens_used=total_tokens)
 
             DialogueCRUD.add_message(
                 session=db,
