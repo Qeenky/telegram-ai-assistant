@@ -4,10 +4,6 @@ from .api_client import client
 
 
 
-
-
-
-
 async def standard_request(telegram_id: int, user_message: str):
     """
     Args:
@@ -48,9 +44,9 @@ async def standard_request(telegram_id: int, user_message: str):
             def count_tokens(text):
                 return len(encoding.encode(text))
 
-            max_dialog_tokens = 2048
+            max_dialog_tokens = 1024
             current_tokens = 0
-            recent_history = conversation_history[-19:]
+            recent_history = conversation_history[-15:]
             for msg in reversed(recent_history):
                 msg_tokens = count_tokens(msg['content']) + 5
                 if current_tokens + msg_tokens <= max_dialog_tokens:
