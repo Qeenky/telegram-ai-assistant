@@ -85,7 +85,7 @@ class Subscription(Base):
     expires_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", backref="subscriptions")
+    user = relationship("User", back_populates="subscriptions")
 
     def __repr__(self):
         return f"<Subscription(id={self.id}, user_id={self.user_id}, type='{self.type}', status='{self.status}')>"
