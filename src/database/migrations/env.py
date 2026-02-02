@@ -22,7 +22,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", _Config.DATABASE_URL)
+SYNC_DATABASE_URL = _Config.DATABASE_URL.replace("+asyncpg", "")
+config.set_main_option("sqlalchemy.url", SYNC_DATABASE_URL)
 
 
 target_metadata = Base.metadata
