@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from src.ai.api_client import standard_request
+from src.ai.prompt_manager import standard_request
 from src.database.crud import get_db, check_tokens_used
 import asyncio
 
