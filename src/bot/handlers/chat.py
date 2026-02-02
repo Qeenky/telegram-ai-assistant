@@ -2,26 +2,26 @@ from aiogram import Router, F
 from aiogram.types import Message
 from src.ai.prompt_manager import standard_request
 from src.database.crud import get_db, check_tokens_used
-import asyncio
+
 
 user_router = Router()
 
 @user_router.message(F.text & ~F.text.startswith('/'))
 async def user_message(message: Message):
     try:
-        with get_db() as db:
-            if check_tokens_used(db, message.from_user.id) == False:
-                return message.answer("Достигнут лимит токенов.")
-            else:
-                typing_msg = await message.answer("Думаю...")
+        async with get_db() as session:
+            can_chat = await check_tokens_used(session, message.from_user.id)
+            if not can_chat:
+                return await message.answer("Достигнут лимит токенов.")
 
-                response = await asyncio.to_thread(
-                    standard_request,
-                    message.from_user.id,
-                    message.text
-                )
+            typing_msg = await message.answer("Думаю...")
 
-                await typing_msg.delete()
-                await message.answer(response, parse_mode="Markdown")
+            response = await standard_request(
+                telegram_id=message.from_user.id,
+                user_message=message.text
+            )
+
+            await typing_msg.delete()
+            await message.answer(response, parse_mode="Markdown")
     except Exception as e:
-        print(e)
+        print(f"Ошибка: {e}")

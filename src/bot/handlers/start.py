@@ -7,8 +7,8 @@ user_router = Router()
 
 @user_router.message(Command("start"))
 async def cmd_start(message: types.Message):
-    with get_db() as db:
-        user, created = get_or_create_user(
+    async with get_db() as db:
+        user, created = await get_or_create_user(
             session=db,
             telegram_id=message.from_user.id,
             username=message.from_user.username,
@@ -28,5 +28,5 @@ async def cmd_help(message: types.Message):
 
 @user_router.message(Command("limit"))
 async def cmd_limit(message: types.Message):
-    with get_db() as db:
-        await message.answer(check_limit_tokens(db, message.from_user.id))
+    async with get_db() as db:
+        await message.answer(await check_limit_tokens(db, message.from_user.id))

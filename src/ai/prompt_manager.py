@@ -1,5 +1,4 @@
 from src.database.crud import get_db, DialogueCRUD, add_tokens_used
-from contextlib import contextmanager
 import tiktoken
 from .api_client import client
 
@@ -7,13 +6,9 @@ from .api_client import client
 
 
 
-@contextmanager
-def get_db_session():
-    with get_db() as db:
-        yield db
 
 
-def standard_request(telegram_id: int, user_message: str):
+async def standard_request(telegram_id: int, user_message: str):
     """
     Args:
         telegram_id: ID пользователя в Telegram
@@ -22,9 +17,9 @@ def standard_request(telegram_id: int, user_message: str):
     Returns:
         Ответ ассистента
     """
-    with get_db_session() as db:
+    async with get_db() as db:
         try:
-            dialogue_user = DialogueCRUD.add_message(
+            dialogue_user = await DialogueCRUD.add_message(
                 session=db,
                 telegram_id=telegram_id,
                 role="user",
@@ -39,7 +34,7 @@ def standard_request(telegram_id: int, user_message: str):
             print(f"Ошибка при добавлении сообщения пользователя: {e}")
             return "Произошла ошибка при сохранении сообщения"
 
-        conversation_history = DialogueCRUD.get_conversation_history(db, telegram_id)
+        conversation_history = await DialogueCRUD.get_conversation_history(db, telegram_id)
         print(f"Полученная история: {conversation_history}")
 
         messages_for_api = []
@@ -88,9 +83,9 @@ def standard_request(telegram_id: int, user_message: str):
 
             assistant_reply = response.choices[0].message.content
             total_tokens += current_tokens + count_tokens(assistant_reply)
-            add_tokens_used(session=db, telegram_id=telegram_id, tokens_used=total_tokens)
+            await add_tokens_used(session=db, telegram_id=telegram_id, tokens_used=total_tokens)
 
-            DialogueCRUD.add_message(
+            await DialogueCRUD.add_message(
                 session=db,
                 telegram_id=telegram_id,
                 role="assistant",
