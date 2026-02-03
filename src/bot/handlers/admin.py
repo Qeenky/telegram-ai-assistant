@@ -21,8 +21,5 @@ async def grant_premium(message: Message, days: int = 30):
     if len(text) >= 3:
         days = int(text[2])
 
-    async with get_db() as session:
-        await session.execute(update(User).where(User.telegram_id == target_user_id).values(daily_token_limit=100000))
-
     await SubscriptionsCRUD.create_subscription(target_user_id, "premium", days)
     await message.answer(f"✅ Подписка выдана на {days} дней")
