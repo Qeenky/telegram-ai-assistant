@@ -230,9 +230,6 @@ class SubscriptionsCRUD:
     @staticmethod
     async def create_subscription(telegram_id: int, subscription_type: str, days: int):
         """Создать или продлить подписку пользователю"""
-        from sqlalchemy import select
-        from datetime import datetime, timedelta
-
         async with get_db() as session:
             try:
                 user = await session.scalar(

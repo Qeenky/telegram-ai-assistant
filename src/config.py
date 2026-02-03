@@ -12,6 +12,8 @@ class Config:
     DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
     DATABASE_URL = os.getenv("DATABASE_URL")
     ADMIN_ID = os.getenv("ADMIN_ID")
+    YUKASSA_SHOP_ID = os.getenv("YUKASSA_SHOP_ID")
+    YUKASSA_SECRET_KEY = os.getenv("YUKASSA_SECRET_KEY")
 
     if not TELEGRAM_BOT_TOKEN:
         raise ValueError("Ошибка: TELEGRAM_BOT_TOKEN не найден в .env файле!")
@@ -21,6 +23,10 @@ class Config:
         raise ValueError("<Ошибка>: DATABASE_URL не найден в .env файле!")
     if not ADMIN_ID:
         raise ValueError("<Ошибка>: ADMIN_ID не найден в .env файле!")
+    if not YUKASSA_SHOP_ID:
+        raise ValueError("<Ошибка>: YUKASSA_SHOP_ID не найден в .env файле!")
+    if not YUKASSA_SECRET_KEY:
+        raise ValueError("<Ошибка>: YUKASSA_SECRET_KEY не найден в .env файле!")
 
 
 

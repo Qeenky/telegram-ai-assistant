@@ -24,7 +24,7 @@ async def cmd_start(message: types.Message):
 # TODO: Обновлять содержание по мере создания функций
 @user_router.message(Command("help"))
 async def cmd_help(message: types.Message):
-    await message.answer("Помощь\n"+"="*30+"\n\n"+"Команды:\n/limit - проверить лимит токенов.")
+    await message.answer("Помощь\n"+"="*30+"\n\n"+"Команды:\n/limit - проверить лимит токенов.\n/buy - купить premium.")
 
 @user_router.message(Command("limit"))
 async def cmd_limit(message: types.Message):
