@@ -60,8 +60,8 @@ async def standard_request(telegram_id: int, user_message: str):
                 "role": "user",
                 "content": user_message
             })
-        messages_for_api.insert(0, {"role": "system", "content": "Ты полезный ассистент. Отвечай кратко\
-и по делу. Если нужно дать развернутый ответ, старайся укладываться в 3000 символов. \
+        messages_for_api.insert(0, {"role": "system", "content": "Ты полезный ассистент. Отвечай кратко \
+и по делу. Если нужно дать развернутый ответ, ОБЯЗАТЕЛЬНО укладываться в 3000 символов. \
 Избегай чрезмерно длинных ответов."})
 
         print(f"Сообщения для API: {messages_for_api}")

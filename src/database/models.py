@@ -79,7 +79,7 @@ class Subscription(Base):
         ForeignKey('public.users.id', ondelete='CASCADE'),
         nullable=False
     )
-    type = Column(String(50))  # "monthly", "yearly", "lifetime"
+    type = Column(String(50))
     status = Column(String(50), default="active")  # "active", "expired", "canceled"
     starts_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime)

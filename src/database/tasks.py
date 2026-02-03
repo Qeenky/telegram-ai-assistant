@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import asyncio
 from sqlalchemy import update
-from src.database.models import User
+from src.database.models import User, Subscription
 from src.database.crud import get_db
 
 
@@ -18,3 +18,15 @@ async def reset_daily_limits():
                 update(User)
                 .values(tokens_used_today=0)
             )
+
+
+async def check_expired_subscriptions():
+  while True:
+      await asyncio.sleep(3600)
+      async with get_db() as session:
+          await session.execute(
+              update(Subscription)
+              .where(Subscription.status == "active")
+              .where(Subscription.expires_at <= datetime.utcnow())
+              .values(status="expired")
+          )

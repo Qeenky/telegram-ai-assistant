@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 
 from sqlalchemy import select
@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 
 import logging
 
-from .models import User, Dialogue
+from .models import User, Dialogue, Subscription
 from src.config import _Config
 
 DATABASE_URL = _Config.DATABASE_URL
@@ -224,3 +224,47 @@ class DialogueCRUD:
         """Обновить объект диалога из базы данных"""
         await session.refresh(dialogue)
         return dialogue
+
+
+class SubscriptionsCRUD:
+    @staticmethod
+    async def create_subscription(telegram_id: int, subscription_type: str, days: int):
+        from sqlalchemy import select
+        from datetime import datetime, timedelta
+
+        async with get_db() as session:
+            user_stmt = select(User).where(User.telegram_id == telegram_id)
+            user = await session.scalar(user_stmt)
+
+            if not user:
+                return None
+
+            subscription = Subscription(
+                user_id=user.id,
+                type=subscription_type,
+                status="active",
+                starts_at=datetime.utcnow(),
+                expires_at=datetime.utcnow() + timedelta(days=days)
+            )
+
+            session.add(subscription)
+            await session.commit()
+            await session.refresh(subscription)
+
+            return subscription
+
+    @staticmethod
+    async def get_active_subscription(telegram_id: int):
+        async with get_db() as session:
+            stmt = (
+                select(Subscription)
+                .join(User, Subscription.user_id == User.id)
+                .where(
+                    User.telegram_id == telegram_id,
+                    Subscription.status == "active"
+                )
+                .order_by(Subscription.expires_at.desc())
+            )
+            result = await session.scalar(stmt)
+
+            return result

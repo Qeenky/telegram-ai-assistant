@@ -1,6 +1,6 @@
 from aiogram.filters import Command
 from aiogram import types, Router
-from src.database.crud import get_db, get_or_create_user
+from src.database.crud import get_db, get_or_create_user, SubscriptionsCRUD
 from src.database.crud import check_limit_tokens
 
 user_router = Router()
@@ -29,4 +29,12 @@ async def cmd_help(message: types.Message):
 @user_router.message(Command("limit"))
 async def cmd_limit(message: types.Message):
     async with get_db() as db:
-        await message.answer(await check_limit_tokens(db, message.from_user.id))
+        active_sub = await SubscriptionsCRUD.get_active_subscription(message.from_user.id)
+        text = "Привилегии: "
+        if active_sub:
+            text += active_sub.type + "\n\n"
+        else:
+            text += "free\n\n"
+
+        text += await check_limit_tokens(db, message.from_user.id)
+        await message.answer(text)
