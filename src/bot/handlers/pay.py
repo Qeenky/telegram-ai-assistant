@@ -12,8 +12,7 @@ payment_router = Router()
 
 @payment_router.message(Command("buy"))
 async def buy_premium_handler(message: Message):
-    """Обработчик покупки премиум подписки"""
-    user_id = message.from_user.id
+    telegram_id = message.from_user.id
 
     SUBSCRIPTIONS = {
         "premium_30": {"amount": 299.00, "days": 30, "description": "Премиум подписка"},
@@ -24,7 +23,7 @@ async def buy_premium_handler(message: Message):
     subscription = SUBSCRIPTIONS["premium_30"]
 
     payment_data = await PaymentManager.create_payment(
-        user_id=user_id,
+        telegram_id=telegram_id,
         amount=subscription["amount"],
         days=subscription["days"],
         description=subscription["description"]
@@ -55,7 +54,7 @@ async def buy_premium_handler(message: Message):
 
     await PaymentManager.start_background_check(
         payment_id=payment_data["payment_id"],
-        user_id=user_id,
+        telegram_id=telegram_id,
         timeout_minutes=5
     )
 

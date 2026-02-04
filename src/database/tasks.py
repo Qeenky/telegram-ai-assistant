@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import asyncio
 from sqlalchemy import update, select
 from src.database.models import User, Subscription
-from src.database.crud import get_db
+from src.database.CRUDs.context_manager import get_db
 
 
 async def reset_daily_limits():

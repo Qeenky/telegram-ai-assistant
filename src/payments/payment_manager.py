@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class PaymentManager:
-    """Менеджер платежей через ЮKassa с polling"""
-
+    """Yookassa"""
     SHOP_ID = _Config.YUKASSA_SHOP_ID
     SECRET_KEY = _Config.YUKASSA_SECRET_KEY
 
@@ -29,7 +28,7 @@ class PaymentManager:
     @classmethod
     async def create_payment(
             cls,
-            user_id: int,
+            telegram_id: int,
             amount: float,
             days: int,
             description: str = "Premium подписка"
@@ -43,12 +42,12 @@ class PaymentManager:
                     },
                     "confirmation": {
                         "type": "redirect",
-                        "return_url": f"https://t.me/HpKrBot?start=payment_{user_id}"
+                        "return_url": f"https://t.me/HpKrBot?start=payment_{telegram_id}"
                     },
                     "capture": True,
                     "description": f"{description} на {days} дней",
                     "metadata": {
-                        "user_id": user_id,
+                        "telegram_id": telegram_id,
                         "days": days,
                         "type": "premium",
                         "timestamp": datetime.utcnow().isoformat()
@@ -78,7 +77,7 @@ class PaymentManager:
                         "status": result["status"],
                         "amount": amount,
                         "days": days,
-                        "user_id": user_id
+                        "telegram_id": telegram_id
                     }
 
         except Exception as e:
@@ -87,7 +86,6 @@ class PaymentManager:
 
     @classmethod
     async def check_payment_status(cls, payment_id: str) -> Optional[Dict[str, Any]]:
-        """Проверить статус платежа"""
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {
@@ -111,19 +109,14 @@ class PaymentManager:
     async def start_background_check(
             cls,
             payment_id: str,
-            user_id: int,
+            telegram_id: int,
             timeout_minutes: int = 5
     ) -> None:
-        """
-        Запустить фоновую проверку платежа
-        timeout_minutes: через сколько минут прекратить проверку
-        """
-
         if payment_id in cls._active_checks:
             cls._active_checks[payment_id].cancel()
 
         task = asyncio.create_task(
-            cls._background_check_worker(payment_id, user_id, timeout_minutes)
+            cls._background_check_worker(payment_id, telegram_id, timeout_minutes)
         )
         cls._active_checks[payment_id] = task
 
@@ -133,10 +126,9 @@ class PaymentManager:
     async def _background_check_worker(
             cls,
             payment_id: str,
-            user_id: int,
+            telegram_id: int,
             timeout_minutes: int
     ) -> None:
-        """Фоновый воркер для проверки платежа"""
         end_time = datetime.utcnow() + timedelta(minutes=timeout_minutes)
         check_interval = 10  # секунд
 
@@ -148,7 +140,7 @@ class PaymentManager:
                     status = status_data.get("status")
 
                     if status == "succeeded":
-                        await cls._process_successful_payment(status_data, user_id)
+                        await cls._process_successful_payment(status_data, telegram_id)
                         break
                     elif status in ["canceled", "expired"]:
                         logger.info(f"Payment {payment_id} was {status}")
@@ -169,24 +161,23 @@ class PaymentManager:
     async def _process_successful_payment(
             cls,
             status_data: Dict[str, Any],
-            user_id: int
+            telegram_id: int
     ) -> None:
-        """Обработать успешный платеж"""
         try:
             metadata = status_data.get("metadata", {})
 
             days_str = metadata.get("days", "30")
             days = int(days_str)
 
-            from src.database.crud import SubscriptionsCRUD
+            from src.database.CRUDs.subscription import AsyncSubscriptionService
 
-            await SubscriptionsCRUD.create_subscription(
-                telegram_id=user_id,
+            await AsyncSubscriptionService.create_subscription(
+                telegram_id=telegram_id,
                 subscription_type="premium",
                 days=days
             )
 
-            logger.info(f"Subscription activated for user {user_id}, {days} days")
+            logger.info(f"Subscription activated for user {telegram_id}, {days} days")
 
         except Exception as e:
             logger.error(f"Error processing successful payment: {e}")
@@ -195,7 +186,6 @@ class PaymentManager:
 
     @classmethod
     def create_payment_keyboard(cls, payment_url: str) -> InlineKeyboardMarkup:
-        """Создать клавиатуру для оплаты"""
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -210,7 +200,6 @@ class PaymentManager:
 
     @classmethod
     async def cleanup(cls) -> None:
-        """Очистка ресурсов (вызывать при остановке бота)"""
         for payment_id, task in cls._active_checks.items():
             task.cancel()
 

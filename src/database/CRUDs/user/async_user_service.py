@@ -47,10 +47,10 @@ class AsyncUserService:
 
 
     @classmethod
-    async def check_limit_tokens(cls, telegram_id: int) -> str:
+    async def check_limit_tokens(cls, telegram_id: int) -> tuple[bool, str]:
         async with get_db() as session:
             repo = SQLAlchemyUserRepository(session)
             has_tokens, status = await repo.check_token_limit(telegram_id)
             if has_tokens is False and "не найден" in status:
                 return "Зарегистрируйтесь с помощью команды /start, или напишите в поддержку"
-            return status
+            return (has_tokens, status)

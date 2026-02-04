@@ -2,8 +2,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from src.config import _Config
-from src.database.crud import SubscriptionsCRUD
-
+from src.database.CRUDs.subscription import AsyncSubscriptionService
 user_router = Router()
 
 async def is_admin(telegram_id: int) -> bool:
@@ -19,5 +18,5 @@ async def grant_premium(message: Message, days: int = 30):
     if len(text) >= 3:
         days = int(text[2])
 
-    await SubscriptionsCRUD.create_subscription(target_user_id, "premium", days)
+    await AsyncSubscriptionService.create_subscription(target_user_id, "premium", days)
     await message.answer(f"✅ Подписка выдана на {days} дней")

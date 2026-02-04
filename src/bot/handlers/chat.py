@@ -8,7 +8,7 @@ user_router = Router()
 @user_router.message(F.text & ~F.text.startswith('/'))
 async def user_message(message: Message):
     try:
-        can_chat = await AsyncUserService.check_limit_tokens(message.from_user.id)
+        can_chat, text = await AsyncUserService.check_limit_tokens(message.from_user.id)
         if not can_chat:
             return await message.answer("Достигнут лимит токенов.")
 

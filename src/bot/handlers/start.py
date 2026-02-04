@@ -1,6 +1,6 @@
 from aiogram.filters import Command
 from aiogram import types, Router
-from src.database.crud import SubscriptionsCRUD
+from src.database.CRUDs.subscription import AsyncSubscriptionService
 from src.database.CRUDs.user import AsyncUserService
 
 user_router = Router()
@@ -24,12 +24,12 @@ async def cmd_help(message: types.Message):
 
 @user_router.message(Command("limit"))
 async def cmd_limit(message: types.Message):
-    active_sub = await SubscriptionsCRUD.get_active_subscription(message.from_user.id)
+    active_sub = await AsyncSubscriptionService.get_active_subscription(message.from_user.id)
     text = "Привилегии: "
     if active_sub:
         text += active_sub.type + "\n\n"
     else:
         text += "free\n\n"
-
-    text += await AsyncUserService.check_limit_tokens(message.from_user.id)
+    can_chat, temp_text = await AsyncUserService.check_limit_tokens(message.from_user.id)
+    text += temp_text
     await message.answer(text)
