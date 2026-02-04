@@ -1,128 +1,16 @@
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Tuple
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 import logging
 
-from .models import User, Dialogue, Subscription
+from .models import User, Subscription
 from .CRUDs.context_manager import get_db
 
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-async def check_limit_tokens(session: AsyncSession, telegram_id: int) -> str:
-    """Проверка лимита токенов пользователя"""
-    result = await session.execute(
-        select(User).where(User.telegram_id == telegram_id)
-    )
-    user = result.scalar_one_or_none()
-
-    if not user:
-        logger.error(f"Пользователь {telegram_id} не найден")
-        return "Зарегистрируйтесь с помощью команды /start, или напишите в поддержку"
-
-    return f"{user.tokens_used_today} / {user.daily_token_limit} tokens."
-
-
-
-
-class DialogueCRUD:
-    @staticmethod
-    async def get_or_create_dialogue(
-            session: AsyncSession,
-            telegram_id: int,
-            initial_history: Optional[List[Dict]] = None
-    ) -> Tuple[Dialogue, bool]:
-        """
-        Получить диалог или создать новый если не существует.
-        """
-        user = await session.scalar(
-            select(User).where(User.telegram_id == telegram_id)
-        )
-
-        if not user:
-            raise ValueError(
-                f"Пользователь с telegram_id={telegram_id} не найден. "
-                "Сначала зарегистрируйтесь через /start"
-            )
-
-        existing_dialogue = await session.scalar(
-            select(Dialogue).where(Dialogue.user_id == user.id)
-        )
-
-        if existing_dialogue:
-            return existing_dialogue, False
-        else:
-            new_dialogue = Dialogue(
-                user_id=user.id,
-                conversation_history=initial_history or []
-            )
-            session.add(new_dialogue)
-            await session.flush()
-            return new_dialogue, True
-
-    @staticmethod
-    async def add_message(
-            session: AsyncSession,
-            telegram_id: int,
-            role: str,  # 'user', 'assistant', 'system'
-            content: str,
-            metadata: Optional[Dict] = None
-    ) -> Dialogue:
-        """
-        Добавить сообщение в историю диалога
-        """
-        dialogue, created = await DialogueCRUD.get_or_create_dialogue(session, telegram_id)
-
-        message = {
-            "role": role,
-            "content": content,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-
-        if metadata:
-            message["metadata"] = metadata
-
-        current_history = dialogue.conversation_history.copy() if dialogue.conversation_history else []
-        current_history.append(message)
-        dialogue.conversation_history = current_history
-        dialogue.updated_at = datetime.utcnow()
-        await session.flush()
-
-        return dialogue
-
-    @staticmethod
-    async def get_conversation_history(
-            session: AsyncSession,
-            telegram_id: int,
-            limit: Optional[int] = None
-    ) -> List[Dict]:
-        """
-        Получить историю диалога
-        """
-        result = await DialogueCRUD.get_or_create_dialogue(session, telegram_id)
-
-        if isinstance(result, tuple):
-            dialogue, created = result
-        else:
-            dialogue = result
-
-        if limit and len(dialogue.conversation_history) > limit:
-            return dialogue.conversation_history[-limit:]
-
-        return dialogue.conversation_history
-
-
-    @staticmethod
-    async def refresh(session: AsyncSession, dialogue: Dialogue) -> Dialogue:
-        """Обновить объект диалога из базы данных"""
-        await session.refresh(dialogue)
-        return dialogue
 
 
 class SubscriptionsCRUD:
