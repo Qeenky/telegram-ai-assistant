@@ -1,7 +1,9 @@
-from src.database.crud import get_db, DialogueCRUD, add_tokens_used
+from src.database.crud import DialogueCRUD
+from src.database.CRUDs.context_manager import get_db
+
 import tiktoken
 from .api_client import client
-
+from src.database.CRUDs.user import AsyncUserService
 
 
 async def standard_request(telegram_id: int, user_message: str):
@@ -79,7 +81,11 @@ async def standard_request(telegram_id: int, user_message: str):
 
             assistant_reply = response.choices[0].message.content
             total_tokens += current_tokens + count_tokens(assistant_reply)
-            await add_tokens_used(session=db, telegram_id=telegram_id, tokens_used=total_tokens)
+
+            await AsyncUserService.add_tokens_used(
+                telegram_id=telegram_id,
+                tokens_used=total_tokens
+            )
 
             await DialogueCRUD.add_message(
                 session=db,

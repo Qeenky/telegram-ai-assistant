@@ -175,15 +175,15 @@ class PaymentManager:
         try:
             metadata = status_data.get("metadata", {})
 
-            days_str = metadata.get("days", "30")  # получаем как строку
-            days = int(days_str)  # преобразуем в int
+            days_str = metadata.get("days", "30")
+            days = int(days_str)
 
             from src.database.crud import SubscriptionsCRUD
 
             await SubscriptionsCRUD.create_subscription(
                 telegram_id=user_id,
                 subscription_type="premium",
-                days=days  # теперь это int
+                days=days
             )
 
             logger.info(f"Subscription activated for user {user_id}, {days} days")

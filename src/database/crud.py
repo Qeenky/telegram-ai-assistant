@@ -2,105 +2,17 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import logging
 
 from .models import User, Dialogue, Subscription
-from src.config import _Config
+from .CRUDs.context_manager import get_db
 
-DATABASE_URL = _Config.DATABASE_URL
-engine = create_async_engine(DATABASE_URL, echo=False)
-SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-from contextlib import asynccontextmanager
-
-
-
-@asynccontextmanager
-async def get_db() -> AsyncSession:
-    """Контекстный менеджер для работы с БД"""
-    session = SessionLocal()
-    try:
-        yield session
-        await session.commit()
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"Database error: {e}")
-        raise
-    finally:
-        await session.close()
-
-
-async def get_or_create_user(
-        session: AsyncSession,
-        telegram_id: int,
-        daily_token_limit: int,
-        username: Optional[str] = None
-) -> tuple[User, bool]:
-    """
-    Получить пользователя или создать нового если не существует.
-    Возвращает (user, created), где created = True если пользователь был создан
-    """
-    try:
-        existing_user = await get_user_by_telegram_id(session, telegram_id)
-
-        if existing_user:
-            if username is not None and existing_user.username != username:
-                existing_user.username = username
-            return existing_user, False
-        else:
-            new_user = User(
-                telegram_id=telegram_id,
-                username=username,
-                daily_token_limit=daily_token_limit
-            )
-            session.add(new_user)
-            await session.flush()
-            return new_user, True
-
-    except Exception as e:
-        logger.error(f"Ошибка в get_or_create_user для telegram_id={telegram_id}: {e}")
-        raise
-
-
-async def add_tokens_used(session: AsyncSession, telegram_id: int, tokens_used: int) -> bool:
-    """Добавление использованных токенов пользователю"""
-    try:
-        result = await session.execute(
-            select(User).where(User.telegram_id == telegram_id)
-        )
-        user = result.scalar_one_or_none()
-
-        if not user:
-            logger.error(f"Пользователь {telegram_id} не найден")
-            return False
-
-        user.tokens_used_today += tokens_used
-        return True
-
-    except Exception as e:
-        logger.error(f"Ошибка при добавлении токенов: {e}")
-        return False
-
-async def check_tokens_used(session: AsyncSession, telegram_id: int) -> bool:
-    result = await session.execute(
-        select(User).where(User.telegram_id == telegram_id)
-    )
-    user = result.scalar_one_or_none()
-
-    if not user:
-        logger.error(f"Пользователь {telegram_id} не найден")
-        return False
-
-    if user.tokens_used_today < user.daily_token_limit:
-        return True
-    else:
-        return False
 
 
 async def check_limit_tokens(session: AsyncSession, telegram_id: int) -> str:
@@ -116,19 +28,6 @@ async def check_limit_tokens(session: AsyncSession, telegram_id: int) -> str:
 
     return f"{user.tokens_used_today} / {user.daily_token_limit} tokens."
 
-
-async def get_user_by_id(session: AsyncSession, user_id: int) -> Optional[User]:
-    """Получение пользователя по ID"""
-    result = await session.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
-
-
-async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int) -> Optional[User]:
-    """Получение пользователя по telegram_id"""
-    result = await session.execute(
-        select(User).where(User.telegram_id == telegram_id)
-    )
-    return result.scalar_one_or_none()
 
 
 

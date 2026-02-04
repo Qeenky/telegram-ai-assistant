@@ -2,9 +2,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from src.config import _Config
-from src.database.crud import SubscriptionsCRUD, get_db
-from sqlalchemy import update
-from src.database.models import User
+from src.database.crud import SubscriptionsCRUD
 
 user_router = Router()
 
