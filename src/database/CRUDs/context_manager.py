@@ -12,7 +12,6 @@ SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=
 
 @asynccontextmanager
 async def get_db() -> AsyncSession:
-    """Контекстный менеджер для работы с БД"""
     session = SessionLocal()
     try:
         yield session
